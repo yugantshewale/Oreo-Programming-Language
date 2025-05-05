@@ -1,0 +1,7 @@
+let x = 69;
+if(x)
+{
+    exit(45);
+}
+let y = 3;
+exit(x);
