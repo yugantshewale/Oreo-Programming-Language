@@ -106,6 +106,31 @@ class Generator{
                     }
                     end_scope();
         }
+        void gen_if_pred(NodeIfPred* pred,const std::string& end_label){
+            struct PredVisitor{
+                Generator& gen;
+                const std::string& end_label;
+                void operator()(const NodeIfPredElif* elif) const{
+                    gen.gen_expr(elif->expr );
+                    gen.pop("rax");
+                    std::string label = gen.create_label();
+                    gen.m_output <<"    test rax, rax\n";
+                    gen.m_output <<"    jz "<<label<<"\n";
+                    gen.gen_scope(elif->scope);
+                    gen.m_output<<"    jmp "<<end_label<<"\n";
+                    if(elif->pred.has_value()){
+                        gen.m_output <<label<<":\n";
+                        gen.gen_if_pred(elif->pred.value(),end_label);
+                    }
+                }
+                void operator()(const NodeIfPredElse* Else) const{
+                    gen.gen_scope(Else->scope);
+                }
+            };
+            PredVisitor visitor{.gen = *this,.end_label=end_label};
+            std::visit(visitor,pred->var);
+            
+        }
         void gen_stmt(const NodeStmt* statement){
             struct StmtVisitor{
                 Generator& gen;
@@ -141,7 +166,13 @@ class Generator{
                     gen.m_output <<"    jz "<<label<<"\n";
                     gen.gen_scope(If->scope);
                     gen.m_output <<label<<":\n";
+                    if(If->pred.has_value()){
+                        const std::string endlbl = gen.create_label(); 
+                        gen.gen_if_pred(If->pred.value(),endlbl);
+                        gen.m_output<<endlbl<<":\n";
+                    }
                 }
+
             };
             StmtVisitor visitor{.gen = *this};
             std::visit(visitor,statement->stmt);// if its exit it will call anything from abcd or if its let it will call from wxyz

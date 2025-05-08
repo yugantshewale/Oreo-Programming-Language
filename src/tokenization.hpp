@@ -20,6 +20,8 @@ enum class TokenType
     open_curly,
     close_curly,
     If,
+    elif,
+    Else,
 }; 
 std::optional<int> bin_prec(TokenType type){
     switch(type){
@@ -70,6 +72,16 @@ public:
                     buf.clear();
                     continue;
                 }
+                else if(buf == "elif"){
+                    tokens.push_back({.type = TokenType::elif});
+                    buf.clear();
+                    continue;
+                }
+                else if(buf == "else"){
+                    tokens.push_back({.type = TokenType::Else});
+                    buf.clear();
+                    continue;
+                }
                 else{//if it is not exit then it is an identifier
                         tokens.push_back({.type=TokenType::ident,.value = buf});
                         buf.clear();
@@ -90,6 +102,30 @@ public:
                 consume();
                 tokens.push_back({.type=TokenType::open_par});
                 continue;
+            }
+            else if(peak().value() == '/' and peak(1).has_value() and peak(1).value() == '/'){
+                consume();
+                consume();
+                while(peak().has_value() and peak().value() != '\n')
+                {
+                    consume();
+                }
+            }
+            else if(peak().value() == '/' and peak(1).has_value() and peak(1).value() == '*'){
+                consume();
+                consume();
+                while(peak().has_value())
+                {
+                    if(peak().has_value() and peak().value() == '*' and peak().has_value() and peak().value() == '/')
+                        break;
+                    consume();
+                }
+                if(peak().has_value()){
+                    consume();
+                }
+                if(peak().has_value()){
+                    consume();
+                }
             }
             else if(peak().value() == ')'){
                 consume();

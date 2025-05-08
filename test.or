@@ -1,7 +1,16 @@
 let x = 69;
-if(x)
+if(0)
 {
     exit(45);
 }
+
+elif(0){
+    exit(46);
+}
+
+else{
+    exit(3);
+}
+
 let y = 3;
 exit(x);
