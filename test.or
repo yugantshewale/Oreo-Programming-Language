@@ -1,16 +1,9 @@
-let x = 69;
-if(0)
-{
-    exit(45);
+let x = 4;
+if(0){
+    x=1;
+}elif(1-1){
+    x=2;
+}else{
+    x=3;
 }
-
-elif(0){
-    exit(46);
-}
-
-else{
-    exit(3);
-}
-
-let y = 3;
 exit(x);

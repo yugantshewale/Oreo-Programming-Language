@@ -13,7 +13,7 @@ int main(int argc,char* argv[]){ // argc stores cnt of arguments and argv stores
     //the first arg is always the execuatable itself
     if(argc != 2){
         std::cerr<<"Incorrect Usage. Correct Usage is ...."<<"\n";
-        std::cerr<<"proapp <input.yogo>"<<"\n";
+        std::cerr<<"proapp <input.or>"<<"\n";
         return EXIT_FAILURE;
     }
     //reading file

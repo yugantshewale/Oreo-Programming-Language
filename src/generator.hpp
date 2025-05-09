@@ -150,6 +150,19 @@ class Generator{
                     gen.m_vars.push_back({.name = stmt_let->ident.value.value(),.stack_loc = gen.m_stack_size});
                     gen.gen_expr(stmt_let->expr);
                 }
+                void operator()(const NodeStmtAssign* stmt_assign) const{
+                    const auto it = std::ranges::find_if(gen.m_vars,[&](const Var& var){
+                        return var.name==stmt_assign->ident.value.value();
+                    });
+                    if(it == gen.m_vars.end()){
+                        std::cerr<<"Undecalred Identifier: \n"<<stmt_assign->ident.value.value()<<"\n";
+                        exit(EXIT_FAILURE);
+                    }
+                    gen.gen_expr(stmt_assign->expr);
+                    gen.pop("rax");
+                    gen.m_output<<"    mov [rsp + "<<(gen.m_stack_size-it->stack_loc-1)*8<<"], rax\n";
+                    
+                }
                 void operator()(const NodeStmtScope* scope) {
                     //gen->m_vars.at(2); /
                     gen.begin_scope();
@@ -165,11 +178,14 @@ class Generator{
                     gen.m_output <<"    test rax, rax\n";
                     gen.m_output <<"    jz "<<label<<"\n";
                     gen.gen_scope(If->scope);
-                    gen.m_output <<label<<":\n";
                     if(If->pred.has_value()){
-                        const std::string endlbl = gen.create_label(); 
+                        const std::string endlbl = gen.create_label();
+                        gen.m_output<<"    jmp "<<endlbl<<"\n"; 
+                        gen.m_output << label<<":\n";
                         gen.gen_if_pred(If->pred.value(),endlbl);
                         gen.m_output<<endlbl<<":\n";
+                    }else{
+                        gen.m_output << label<<":\n";
                     }
                 }
 

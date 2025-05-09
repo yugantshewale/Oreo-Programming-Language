@@ -30,6 +30,11 @@ struct NodeBinExprDiv{
     NodeExpr* lhs;
     NodeExpr* rhs;
 };
+struct NodeStmtAssign{
+    Token ident;
+    NodeExpr* expr;
+
+};
 struct NodeBinExpr{
     std::variant<NodeBinExprAdd*,NodeBinExprMul*,NodeBinExprSub*,NodeBinExprDiv*> expr;
     //NodeBinExprAdd* add;
@@ -72,7 +77,7 @@ struct NodeStmtIf{
     std::optional<NodeIfPred*> pred; 
 };
 struct NodeStmt{
-    std::variant<NodeStmtExit*,NodeStmtLet*,NodeStmtScope*,NodeStmtIf*> stmt;
+    std::variant<NodeStmtExit*,NodeStmtLet*,NodeStmtScope*,NodeStmtIf*,NodeStmtAssign*> stmt;
 };
 struct NodeProg{
     std::vector<NodeStmt> stmts;
@@ -287,7 +292,23 @@ class Parser{
                 auto stmt = m_allocator.alloc<NodeStmt>();
                 stmt->stmt = stmt_let;
                 return stmt;
-            }else if(peak().has_value() and peak().value().type == TokenType::open_curly)
+            }
+            else if(peak().has_value() and peak().value().type == TokenType::ident and 
+            peak(1).has_value() and peak(1).value().type == TokenType::equals) {
+                auto assign =  m_allocator.alloc<NodeStmtAssign>();
+                assign->ident = consume();
+                consume();
+                if(auto exp = parse_expr()){
+                    assign->expr = exp.value();
+                }else{
+                    std::cerr<<"Invalid Expression\n";
+                    exit(EXIT_FAILURE);
+                }
+                try_consume(TokenType::semi,"Invalid Expression missing ';'");
+                auto stmt = m_allocator.emplace<NodeStmt>(assign);
+                return stmt;
+            }
+            else if(peak().has_value() and peak().value().type == TokenType::open_curly)
             {
                 if(auto scope = parse_scope()){
                     auto stmt = m_allocator.alloc<NodeStmt>();
