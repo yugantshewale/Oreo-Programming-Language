@@ -88,6 +88,10 @@ class Parser{
         inline explicit Parser(std::vector<Token> tokens):m_tokens(std::move(tokens))
                         ,m_allocator(4*1024*1024)
         {}
+        void error_expected(const std::string& msg){
+            std::cerr<<"[Parse Error] Expected `"<<msg<<"` on line "<<peak(-1).value().line<<'\n';
+            exit(EXIT_FAILURE);
+        }
         std::optional<NodeTerm*> parse_term(){
             if(auto int_lit = try_consume(TokenType::int_lit)){
                 auto term_int_lit = m_allocator.alloc<NodeTermIntLit>();
@@ -107,10 +111,9 @@ class Parser{
             }else if(auto open_paren = try_consume(TokenType::open_par)){
                 auto expr = parse_expr(); 
                 if(!expr.has_value()){
-                    std::cerr<<"Expected an expression\n";
-                    exit(EXIT_FAILURE);
+                    error_expected("Expression");
                 }
-                try_consume(TokenType::close_par,"Expected ')'");
+                try_consume(TokenType::close_par,")");
                 auto term_paren = m_allocator.alloc<NodeTermParen>();
                 term_paren->expr = expr.value();   
                 auto term =  m_allocator.alloc<NodeTerm>();
@@ -138,34 +141,33 @@ class Parser{
                 }else{
                     break;
                 }
-                Token op = consume();//operator
+                auto [type,line,value]= consume();//operator
                 int next_min_prec = prec.value()+1;
                 auto expr_rhs = parse_expr(next_min_prec);
                 if(!expr_rhs.has_value()){
-                    std::cerr<<"Unable to parse expr\n";
-                    exit(EXIT_FAILURE);
+                    error_expected("expression");
                 }
                 auto Expr = m_allocator.alloc<NodeBinExpr>();
                 auto expr_lhs2 = m_allocator.alloc<NodeExpr>();;
-                if(op.type == TokenType::plus){
+                if(type == TokenType::plus){
                     auto add = m_allocator.alloc<NodeBinExprAdd>();
                     expr_lhs2->expr = expr_lhs->expr;
                     add->lhs = expr_lhs2;
                     add->rhs = expr_rhs.value();
                     Expr->expr = add;
-                }else if(op.type == TokenType::star){
+                }else if(type == TokenType::star){
                     auto mul = m_allocator.alloc<NodeBinExprMul>();
                     expr_lhs2->expr = expr_lhs->expr;
                     mul->lhs = expr_lhs2;
                     mul->rhs = expr_rhs.value();
                     Expr->expr = mul;
-                }else if(op.type == TokenType::sub){
+                }else if(type == TokenType::sub){
                     auto sub = m_allocator.alloc<NodeBinExprSub>();
                     expr_lhs2->expr = expr_lhs->expr;
                     sub->lhs = expr_lhs2;
                     sub->rhs = expr_rhs.value();
                     Expr->expr = sub;
-                }else if(op.type == TokenType::div){
+                }else if(type == TokenType::div){
                     auto div = m_allocator.alloc<NodeBinExprDiv>();
                     expr_lhs2->expr = expr_lhs->expr;
                     div->lhs = expr_lhs2;
@@ -213,26 +215,25 @@ class Parser{
             while(auto stmt = parse_stmt()){
                 scope->stmts.push_back(stmt.value());
             }
-            try_consume(TokenType::close_curly,"Expected '}' ");
+            try_consume(TokenType::close_curly,"'}'");
             return scope;   
         }
         std::optional<NodeIfPred*> parse_if_predicate(){
             if(try_consume(TokenType::elif)){
-                try_consume(TokenType::open_par,"Expected '('");
+                try_consume(TokenType::open_par,"'('");
                 auto elif = m_allocator.alloc<NodeIfPredElif>();
                 auto if_pred= m_allocator.alloc<NodeIfPredElif>();
                 if(auto exp = parse_expr()){
                     elif->expr = exp.value();
                 }else{
-                    std::cerr<<"Expected Expression\n";
-                    exit(EXIT_FAILURE);
+                    error_expected("Expression");
                 }
-                try_consume(TokenType::close_par,"Expected ')'");  
+                try_consume(TokenType::close_par,"')'");  
                 if(auto scope = parse_scope()){
                     elif->scope = scope.value();
                 }else{
-                    std::cerr<<"Expected Scope\n";
-                    exit(EXIT_FAILURE);
+                    error_expected("scope");
+                    
                 } 
                 elif->pred = parse_if_predicate();
                 auto pred = m_allocator.emplace<NodeIfPred>(elif);
@@ -244,8 +245,7 @@ class Parser{
                 if(auto scope = parse_scope()){
                     Else->scope = scope.value();
                 }else{
-                    std::cerr<<"Expected Expression\n";
-                    exit(EXIT_FAILURE);   
+                    error_expected("scope");
                 }
                 auto pred= m_allocator.emplace<NodeIfPred>(Else);
                 return pred;
@@ -254,7 +254,7 @@ class Parser{
         }
         std::optional<NodeStmt*> parse_stmt() {
             //Exit statement parsing
-            if(peak().value().type==TokenType::exit && peak(1).has_value() && peak(1).value().type == TokenType::open_par){
+            if(peak().has_value() and peak().value().type==TokenType::exit && peak(1).has_value() && peak(1).value().type == TokenType::open_par){
                 consume();
                 consume();//consume the open par
                 auto stmt_exit = m_allocator.alloc<NodeStmtExit>();
@@ -285,8 +285,7 @@ class Parser{
                     stmt_let->expr = node_expr.value();
                     //stmt_let.expr = node_expr.value();
                 }else{
-                    std::cerr<<"Invalid Expression ";
-                    exit(EXIT_FAILURE);
+                    error_expected("Expression");
                 }
                 try_consume(TokenType::semi,"Invalid Expression missing ';'");
                 auto stmt = m_allocator.alloc<NodeStmt>();
@@ -301,8 +300,7 @@ class Parser{
                 if(auto exp = parse_expr()){
                     assign->expr = exp.value();
                 }else{
-                    std::cerr<<"Invalid Expression\n";
-                    exit(EXIT_FAILURE);
+                    error_expected("expression");
                 }
                 try_consume(TokenType::semi,"Invalid Expression missing ';'");
                 auto stmt = m_allocator.emplace<NodeStmt>(assign);
@@ -320,7 +318,7 @@ class Parser{
                 }
             }
             else if(auto If = try_consume(TokenType::If)){
-                try_consume(TokenType::open_par,"Expected '('");
+                try_consume(TokenType::open_par,"'('");
                 auto stmt_if = m_allocator.alloc<NodeStmtIf>();
                 if(auto exp = parse_expr()){
                     stmt_if->expr = exp.value();
@@ -328,7 +326,7 @@ class Parser{
                     std::cerr<<"Invalid Expression\n";
                     exit(EXIT_FAILURE);
                 }
-                try_consume(TokenType::close_par,"Expected ')'");
+                try_consume(TokenType::close_par,"')'");
                 if(auto scope = parse_scope())
                 {
                     stmt_if->scope = scope.value();
@@ -360,7 +358,7 @@ class Parser{
             return prog;
         }
     private:
-        [[nodiscard]] inline std::optional<Token> peak(int offset = 0) const{
+        [[nodiscard]] inline std::optional<Token> peak(const int offset = 0) const{
             if(m_index+offset >=  m_tokens.size()){
                 return {};//out of range
             }else {
@@ -370,10 +368,9 @@ class Parser{
         inline Token try_consume(TokenType type,std::string err_msg){
             if(peak().has_value() and peak().value().type == type){
                 return consume();
-            }else{
-                std::cerr<<err_msg<<"\n";
-                exit(EXIT_FAILURE);
             }
+            error_expected(err_msg);
+            return{};
         }
         inline std::optional<Token> try_consume(TokenType type){
             if(peak().has_value() and peak().value().type == type){

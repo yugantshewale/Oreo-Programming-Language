@@ -155,7 +155,7 @@ class Generator{
                         return var.name==stmt_assign->ident.value.value();
                     });
                     if(it == gen.m_vars.end()){
-                        std::cerr<<"Undecalred Identifier: \n"<<stmt_assign->ident.value.value()<<"\n";
+                        std::cerr<<"Undeclared Identifier: "<<stmt_assign->ident.value.value()<<"\n";
                         exit(EXIT_FAILURE);
                     }
                     gen.gen_expr(stmt_assign->expr);

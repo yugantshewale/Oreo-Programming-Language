@@ -38,6 +38,7 @@ std::optional<int> bin_prec(TokenType type){
 struct Token
 {
     TokenType type;
+    int line;
     std::optional<std::string> value{};
 };
 class Tokenizer
@@ -51,6 +52,7 @@ public:
     inline std::vector<Token> tokenize() {
         std::vector<Token> tokens{};
         std::string buf;
+        int line_cnt = 1;
         while(peak().has_value()){
             if(std::isalpha(peak().value()))//identifying keywords and identifiers
             {
@@ -59,31 +61,31 @@ public:
                     buf.push_back(consume());
                 }
                 if(buf == "exit"){
-                    tokens.push_back({.type=TokenType::exit});
+                    tokens.push_back({TokenType::exit,line_cnt});
                     buf.clear();
                     continue;
                 }else if(buf == "let"){
-                    tokens.push_back({.type = TokenType::let});
+                    tokens.push_back({TokenType::let,line_cnt});
                     buf.clear();
                     continue;
                 }
                 else if(buf == "if"){
-                    tokens.push_back({.type = TokenType::If});
+                    tokens.push_back({TokenType::If,line_cnt});
                     buf.clear();
                     continue;
                 }
                 else if(buf == "elif"){
-                    tokens.push_back({.type = TokenType::elif});
+                    tokens.push_back({TokenType::elif,line_cnt});
                     buf.clear();
                     continue;
                 }
                 else if(buf == "else"){
-                    tokens.push_back({.type = TokenType::Else});
+                    tokens.push_back({TokenType::Else,line_cnt});
                     buf.clear();
                     continue;
                 }
                 else{//if it is not exit then it is an identifier
-                        tokens.push_back({.type=TokenType::ident,.value = buf});
+                        tokens.push_back({TokenType::ident,line_cnt, buf});
                         buf.clear();
                         continue;
                 }
@@ -94,13 +96,13 @@ public:
                 while(peak().has_value() && std::isdigit(peak().value())){
                     buf.push_back(consume());
                     }
-                tokens.push_back({.type=TokenType::int_lit, .value=buf});
+                tokens.push_back({TokenType::int_lit,line_cnt, buf});
                 buf.clear();
                 continue;
             }
             else if(peak().value() == '('){
                 consume();
-                tokens.push_back({.type=TokenType::open_par});
+                tokens.push_back({TokenType::open_par,line_cnt});
                 continue;
             }
             else if(peak().value() == '/' and peak(1).has_value() and peak(1).value() == '/'){
@@ -129,50 +131,54 @@ public:
             }
             else if(peak().value() == ')'){
                 consume();
-                tokens.push_back({.type=TokenType::close_par});
+                tokens.push_back({TokenType::close_par,line_cnt});
                 continue;
             }
             else if(peak().value() == '='){
                 consume();
-                tokens.push_back({.type=TokenType::equals});
+                tokens.push_back({TokenType::equals,line_cnt});
                 continue;
             }
             else if(peak().value() == ';'){
                 consume();
-                tokens.push_back({.type=TokenType::semi});
+                tokens.push_back({TokenType::semi, line_cnt});
                 continue;
             }
             else if(peak().value() == '+'){
                 consume();
-                tokens.push_back({.type = TokenType::plus});
+                tokens.push_back({TokenType::plus, line_cnt});
             }
             else if(peak().value() == '*'){
                 consume();
-                tokens.push_back({.type = TokenType::star});
+                tokens.push_back({TokenType::star, line_cnt});
             }
             else if(peak().value() == '-'){
                 consume();
-                tokens.push_back({.type = TokenType::sub});
+                tokens.push_back({TokenType::sub, line_cnt});
             }
             else if(peak().value() == '/'){
                 consume();
-                tokens.push_back({.type = TokenType::div});
+                tokens.push_back({TokenType::div, line_cnt});
             }
             else if(peak().value() == '{'){
                 consume();
-                tokens.push_back({.type = TokenType::open_curly});
+                tokens.push_back({TokenType::open_curly, line_cnt});
             }
             else if(peak().value() == '}'){
                 consume();
-                tokens.push_back({.type = TokenType::close_curly});
+                tokens.push_back({TokenType::close_curly, line_cnt});
+            }
+            else if(peak().value() == '\n'){
+                consume();
+                line_cnt++;
             }
             else if(std::isspace(peak().value())){
                 consume();
                 continue;
             }
             else{
-                std::cerr<<"You messed up \n";
-                exit(EXIT_FAILURE);
+                std::cerr<<"Invalid Token \n";
+               exit(EXIT_FAILURE);
             }
         }
         m_index = 0;
