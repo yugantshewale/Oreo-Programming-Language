@@ -26,7 +26,19 @@ struct NodeBinExprSub{
     NodeExpr* lhs;
     NodeExpr* rhs;
 };
+struct NodeBinExprLess{
+    NodeExpr* lhs;
+    NodeExpr* rhs;
+};
+struct NodeBinExprMore{
+    NodeExpr* lhs;
+    NodeExpr* rhs;
+};
 struct NodeBinExprDiv{
+    NodeExpr* lhs;
+    NodeExpr* rhs;
+};
+struct NodeBinExprEqr{
     NodeExpr* lhs;
     NodeExpr* rhs;
 };
@@ -36,7 +48,7 @@ struct NodeStmtAssign{
 
 };
 struct NodeBinExpr{
-    std::variant<NodeBinExprAdd*,NodeBinExprMul*,NodeBinExprSub*,NodeBinExprDiv*> expr;
+    std::variant<NodeBinExprAdd*,NodeBinExprMul*,NodeBinExprSub*,NodeBinExprDiv*,NodeBinExprLess*,NodeBinExprMore*,NodeBinExprEqr*> expr;
     //NodeBinExprAdd* add;
 };
 struct NodeTerm{
@@ -173,6 +185,26 @@ class Parser{
                     div->lhs = expr_lhs2;
                     div->rhs = expr_rhs.value();
                     Expr->expr = div;
+                }
+                else if(type == TokenType::less){
+                    auto less = m_allocator.alloc<NodeBinExprLess>();
+                    expr_lhs2->expr = expr_lhs->expr;
+                    less->lhs = expr_lhs2;
+                    less->rhs = expr_rhs.value();
+                    Expr->expr = less;
+                }
+                else if(type == TokenType::more){
+                    auto more = m_allocator.alloc<NodeBinExprMore>();
+                    expr_lhs2->expr = expr_lhs->expr;
+                    more->lhs = expr_lhs2;
+                    more->rhs = expr_rhs.value();
+                    Expr->expr = more;
+                }else if(type == TokenType::is_equal){
+                    auto eq = m_allocator.alloc<NodeBinExprEqr>();
+                    expr_lhs2->expr = expr_lhs->expr;
+                    eq->lhs = expr_lhs2;
+                    eq->rhs = expr_rhs.value();
+                    Expr->expr = eq;
                 }
                 expr_lhs->expr = Expr;
             }

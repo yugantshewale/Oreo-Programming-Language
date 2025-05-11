@@ -75,6 +75,39 @@ class Generator{
                     gen.push("rax");
 
                 }
+                void operator()(const NodeBinExprLess* less) const {
+                    gen.gen_expr(less->rhs);
+                    gen.gen_expr(less->lhs);
+                    gen.pop("rax");
+                    gen.pop("rbx");
+                    gen.m_output<<"    cmp rax, rbx\n";
+                    gen.m_output<<"    setg al\n";           //AL = 1 if rax>rbx, else 0
+                    gen.m_output<<"    movzx rax, al\n";     //zero‐extend into RAX
+                    gen.push("rax");
+
+                }
+                void operator()(const NodeBinExprMore* more) const {
+                    gen.gen_expr(more->rhs);
+                    gen.gen_expr(more->lhs);
+                    gen.pop("rax");
+                    gen.pop("rbx");
+                    gen.m_output<<"    cmp rax, rbx\n";
+                    gen.m_output<<"    set1 al\n";           //AL = 1 if rax>rbx, else 0
+                    gen.m_output<<"    movzx rax, al\n";     //zero‐extend into RAX
+                    gen.push("rax");
+
+                }
+                void operator()(const NodeBinExprEqr* eq) const {
+                    gen.gen_expr(eq->rhs);
+                    gen.gen_expr(eq->lhs);
+                    gen.pop("rax");
+                    gen.pop("rbx");
+                    gen.m_output<<"    cmp rax, rbx\n";
+                    gen.m_output<<"    sete al\n";           // set al = 1 if a==b else 0
+                    gen.m_output<<"    movzx rax, al\n";     //zero‐extend into RAX
+                    gen.push("rax");
+
+                }
             };
             BinExprVisitor visitor{.gen = *this};
             std::visit(visitor,bin_expr->expr); 

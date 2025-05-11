@@ -22,15 +22,22 @@ enum class TokenType
     If,
     elif,
     Else,
+    less,// >
+    more,//<
+    is_equal,
 }; 
 std::optional<int> bin_prec(TokenType type){
     switch(type){
+        case TokenType::less:
+        case TokenType::more:
+        case TokenType::is_equal:
+            return 1;
         case TokenType::sub:
         case TokenType::plus:
-            return 0;
+            return 2;
         case TokenType::div:
         case TokenType::star:
-            return 1;
+            return 3;
         default:
             return {};
     }
@@ -134,6 +141,12 @@ public:
                 tokens.push_back({TokenType::close_par,line_cnt});
                 continue;
             }
+             else if(peak().value() == '=' and peak(1).has_value() and peak(1).value() == '='){
+                consume();
+                consume();
+                tokens.push_back({TokenType::is_equal,line_cnt});
+                continue;
+            }
             else if(peak().value() == '='){
                 consume();
                 tokens.push_back({TokenType::equals,line_cnt});
@@ -167,6 +180,14 @@ public:
             else if(peak().value() == '}'){
                 consume();
                 tokens.push_back({TokenType::close_curly, line_cnt});
+            }
+            else if(peak().value() == '>'){
+                consume();
+                tokens.push_back({TokenType::less, line_cnt});
+            }
+            else if(peak().value() == '<'){
+                consume();
+                tokens.push_back({TokenType::more, line_cnt});
             }
             else if(peak().value() == '\n'){
                 consume();

@@ -1,12 +1,7 @@
- x = 4;
-if(0){
-    x=3;
+let x = 4;
+let y = 3;
+if(x==y){
+    exit(y);
+}else{
+    exit(x);
 }
-elif(1-1){
-    x=2;
-}
-3
-else{
-    x=3;
-}
-exit(1);
